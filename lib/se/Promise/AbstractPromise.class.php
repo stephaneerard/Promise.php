@@ -10,7 +10,9 @@ abstract class AbstractPromise implements PromiseInterface
 
 	const __STATE_NOT_EXECUTING__			= 0;
 	const __STATE_EXECUTING__				= 1;
-	const __STATE_EXECUTED__				= 2;
+	const __STATE_EXECUTING_PARENT__		= 2;
+	const __STATE_EXECUTING_CHILDREN__		= 3;
+	const __STATE_EXECUTED__				= 4;
 	
 	protected $_state = self::__STATE_NOT_EXECUTING__;
 	
@@ -75,6 +77,8 @@ abstract class AbstractPromise implements PromiseInterface
 		$this->_state = self::__STATE_EXECUTING__;
 		try{
 			$result = call_user_func_array($this->fulfill, func_get_args());
+			
+			$this->_state = self::__STATE_EXECUTING_CHILDREN__;
 			foreach($this->chain as $promise)
 			{
 				$result = $promise($result);

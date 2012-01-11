@@ -17,7 +17,7 @@ class PromiseTestCase extends \PHPUnit_Framework_TestCase
 	{
 		$passedInFulfill 	= false;
 		$passedInFail 		= false;
-		$object 			= $this->getNewPromise();
+		$object				= $this->getNewPromise();
 
 		$object->then(function() use(&$passedInFulfill){
 			$passedInFulfill = true;
@@ -132,7 +132,7 @@ class PromiseTestCase extends \PHPUnit_Framework_TestCase
 
 
 		$if = $root
-		->_if(/** condition **/function($result /** $result of first promise **/) use($test, &$passedInIfCondition){
+		->_if(/** if condition **/function($result /** $result of first promise **/) use($test, &$passedInIfCondition){
 
 			$passedInIfCondition = true;
 
@@ -141,10 +141,10 @@ class PromiseTestCase extends \PHPUnit_Framework_TestCase
 
 			return $condition;
 
-		}, /** block **/function($result) use ($test, &$passedInIfBlock){
+		}, /** if block **/function($result) use ($test, &$passedInIfBlock){
 
 			$passedInIfBlock = true;
-				
+
 			return $result;
 
 		})
@@ -171,7 +171,7 @@ class PromiseTestCase extends \PHPUnit_Framework_TestCase
 
 
 		$if = $root
-		->_if(/** condition **/function($result /** $result of first promise **/) use($test, &$passedInIfCondition){
+		->_if(/** if condition **/function($result /** $result of first promise **/) use($test, &$passedInIfCondition){
 
 			$passedInIfCondition = true;
 
@@ -180,7 +180,7 @@ class PromiseTestCase extends \PHPUnit_Framework_TestCase
 
 			return $condition;
 
-		}, /** block **/function($result) use ($test, &$passedInIfBlock){
+		}, /** ifblock **/function($result) use ($test, &$passedInIfBlock){
 
 			$passedInIfBlock = true;
 
@@ -197,8 +197,51 @@ class PromiseTestCase extends \PHPUnit_Framework_TestCase
 		$this->assertSame($root, $if->getRoot());
 	}
 
+	public function testElsePromise()
+	{
+		$test						= $this;
+		$passedInIfCondition		= false;
+		$passedInIfBlock			= false;
+		$passedInElseBlock			= false;
+		
+		$passedAlong				= 'passed along';
+		
+		$root = $this->getNewPromise(function($arg){return $arg;});
+		
+		$if = $root
+		->_if(/** if condition **/function($result) use($test, &$passedInIfCondition, $passedAlong){
+			
+			$passedInIfCondition = true;
+			$test->assertEquals($passedAlong, $result);
+			return false;
+			
+		}, /** if block **/function($result) use($test, &$passedInIfBlock, $passedAlong){
+			
+			$passedInIfBlock = true;
+			$test->assertEquals($passedAlong, $result);
+			
+		});
+		
+		$else = $if
+		->_else(/** else block**/function($arg) use($test, &$passedInElseBlock, $passedAlong){
+			$passedInElseBlock = true;
+			$test->assertEquals($passedAlong, $arg);
+			
+			return true;
+		});
+		
+		$else($passedAlong);
+		
+		$this->assertInstanceOf('se\Promise\Promise', $root);
+		$this->assertInstanceOf('se\Promise\IfPromise', $if);
+		$this->assertInstanceOf('se\Promise\ElsePromise', $else);
 
-
+		$this->assertTrue($passedInIfCondition, 'if condition closure has been executed as expected');
+		$this->assertFalse($passedInIfBlock, 'if block closure has not been executed as expected');
+		$this->assertTrue($passedInElseBlock, 'else block closure has been executed as expected');
+		
+		$this->assertSame($root, $else->getRoot());
+	}
 
 	/**********************
 	 *
