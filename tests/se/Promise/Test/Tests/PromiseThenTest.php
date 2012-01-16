@@ -128,15 +128,7 @@ class PromiseThenTestCase extends \PHPUnit_Framework_TestCase
 	{
 		Promise::instanciate(function(){
 		}, function(){
-		}, 'se\Promise\Test\Tests\UncompliantInterfacePromise');
-	}
-	
-	public function testPromiseOfParentReturnsParent()
-	{
-		$parent = Promise::instanciate(function(){});
-		$child = $parent->_if(function(){}, function(){});
-		
-		$this->assertSame($child->getParent(), $parent);
+		}, 'se\Promise\Test\myDumbClass');
 	}
 	
 	/**
@@ -166,6 +158,3 @@ class PromiseThenTestCase extends \PHPUnit_Framework_TestCase
 		return Promise::instanciate($fulfill, $fail ? $fail : null, $class);
 	}
 }
-
-
-class UncompliantInterfacePromise{}
