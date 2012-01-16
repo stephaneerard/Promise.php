@@ -3,14 +3,8 @@ namespace se\Promise\Test;
 
 class PhpunitRunner
 {
-	public function __construct($suite, $dir, $namespaces = array())
+	public function __construct($suite, $dir)
 	{
-		require 'PHPUnit/Autoload.php';
-		$loader = require __DIR__ . '/../vendor/.composer/autoload.php';
-		foreach($namespaces as $ns => $dir)
-		{
-			$loader->add($ns, $dir);
-		}
 		$runner = new \PHPUnit_TextUI_TestRunner();
 		$suite = new $suite;
 		$suite->addTestFiles($this->getTestFiles($dir));
@@ -37,4 +31,7 @@ class PhpunitRunner
 	}
 }
 
-new PhpunitRunner('se\\Promise\\Test\\PromiseTestSuite', __DIR__, array('se\\Promise\Test' => __DIR__));
+$loader = require __DIR__ . '/bootstrap.php';
+$loader->add('se\\Promise\Test', __DIR__);
+
+new PhpunitRunner(new PromiseTestSuite(), __DIR__);
