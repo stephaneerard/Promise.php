@@ -2,4 +2,4 @@
 .buildpath
 .settings
 composer.lock
-vendors/*
+vendor/*
