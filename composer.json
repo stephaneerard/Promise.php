@@ -19,6 +19,5 @@
         "psr-0":{
             "se\\Promise": "src/"
         }
-    },
-    "target-dir": "se/promise.php"
+    }
 }
