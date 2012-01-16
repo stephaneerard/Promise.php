@@ -6,7 +6,7 @@ class PhpunitRunner
 	public function __construct($suite, $dir, $namespaces = array())
 	{
 		require 'PHPUnit/Autoload.php';
-		$loader = require __DIR__ . '/../vendors/.composer/autoload.php';
+		$loader = require __DIR__ . '/../vendor/.composer/autoload.php';
 		foreach($namespaces as $ns => $dir)
 		{
 			$loader->add($ns, $dir);
