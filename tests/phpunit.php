@@ -1,5 +1,6 @@
 <?php
 namespace se\Promise\Test;
+require __DIR__ . '/bootstrap.php';
 
 class PhpunitRunner
 {
@@ -8,7 +9,7 @@ class PhpunitRunner
 		$runner = new \PHPUnit_TextUI_TestRunner();
 		$suite = new $suite;
 		$suite->addTestFiles($this->getTestFiles($dir));
-		$runner->doRun($suite, array('verbose'=>true));
+		$runner->doRun($suite, array('verbose'=>false));
 	}
 
 	function getTestFiles($dir)
@@ -30,8 +31,5 @@ class PhpunitRunner
 		return $files;
 	}
 }
-
-$loader = require __DIR__ . '/bootstrap.php';
-$loader->add('se\\Promise\Test', __DIR__);
 
 new PhpunitRunner(new PromiseTestSuite(), __DIR__);

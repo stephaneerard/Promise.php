@@ -8,6 +8,9 @@ abstract class AbstractIfPromise extends AbstractPromise implements IfPromiseInt
 	protected static $_CLASS_ELSEIF_PROMISE		= 'se\Promise\ElseIfPromise';
 	protected static $_CLASS_ELSE_PROMISE		= 'se\Promise\ElsePromise';
 
+	protected $_class_elseif_promise;
+	protected $_class_else_promise;
+	
 	/**
 	 * @var SuperClosure
 	 */
@@ -53,9 +56,15 @@ abstract class AbstractIfPromise extends AbstractPromise implements IfPromiseInt
 			}
 			elseif($this->elseif)
 			{
-				$result = call_user_func_array($this->elseif, $args);
+				try{
+					$result = call_user_func_array($this->elseif, $args);
+				}catch(ElseIfPromiseConditionException $e)
+				{
+					$elseIfConditionNotPassed = false;
+				}
 			}
-			elseif($this->else)
+			
+			if((isset($elseIfConditionNotPassed) && !$elseIfConditionNotPassed) || $this->else)
 			{
 				$result = call_user_func_array($this->else, $args);
 			}
@@ -89,34 +98,77 @@ abstract class AbstractIfPromise extends AbstractPromise implements IfPromiseInt
 		$this->else		= new $class($this, $block);
 		return $this->else;
 	}
-
-	protected function getElsePromiseClass($class = null)
+	
+	/****************************************************************
+	*
+	* 				CONDITION PROMISES CLASSES
+	*
+	***************************************************************/
+	
+	/***************************************
+	*
+	* 				ELSE
+	*
+	**************************************/
+	
+	public function getElsePromiseClass($class = null)
 	{
-		return null === $class ? self::$_CLASS_ELSE_PROMISE : $class;
+		if(null === $class)
+		{
+			if(null === $this->_class_else_promise)
+			{
+				return self::$_CLASS_ELSE_PROMISE;
+			}
+			return $this->_class_else_promise;
+		}
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ElsePromiseInterface');
+		return $class;
 	}
 	
-	public static function setElsePromiseClass($class)
+	public static function setStaticElsePromiseClass($class)
 	{
-		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface('se\Promise\ElsePromiseInterface'))
-		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface se\Promise\ElsePromiseInterface'));
-		}
-		self::$_CLASS_FOR_PROMISE = $class;
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ElsePromiseInterface');
+		self::$_CLASS_ELSE_PROMISE = $class;
 	}
+	
+	public function setElsePromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ElsePromiseInterface');
+		$this->_class_else_promise = $class;
+		return $this;
+	}
+	
+	/***************************************
+	*
+	* 				ELSE IF
+	*
+	**************************************/
+	
 	
 	protected function getElseIfPromiseClass($class = null)
 	{
-		return null === $class ? self::$_CLASS_ELSEIF_PROMISE : $class;
+				if(null === $class)
+		{
+			if(null === $this->_class_elseif_promise)
+			{
+				return self::$_CLASS_ELSEIF_PROMISE;
+			}
+			return $this->_class_elseif_promise;
+		}
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ElseIfPromiseInterface');
+		return $class;
 	}
 
-	public static function setElseIfPromiseClass($class)
+	public static function setStaticElseIfPromiseClass($class)
 	{
-		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface('se\Promise\ElseIfPromiseInterface'))
-		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface se\Promise\ElseIfPromiseInterface'));
-		}
-		self::$_CLASS_FOR_PROMISE = $class;
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ElseIfPromiseInterface');
+		self::$_CLASS_ELSEIF_PROMISE = $class;
+	}
+	
+	public function setElseIfPromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ElseIfPromiseInterface');
+		$this->_class_elseif_promise = $class;
+		return $this;
 	}
 }

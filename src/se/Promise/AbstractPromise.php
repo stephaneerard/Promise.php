@@ -8,14 +8,19 @@ abstract class AbstractPromise implements PromiseInterface
 	protected static $_CLASS_WHILE_PROMISE 	= 'se\Promise\WhilePromise';
 	protected static $_CLASS_FOR_PROMISE 	= 'se\Promise\IfPromise';
 
+	protected $_class_if_promise;
+	protected $_class_do_promise;
+	protected $_class_while_promise;
+	protected $_class_for_promise;
+
 	const __STATE_NOT_EXECUTING__			= 0;
 	const __STATE_EXECUTING__				= 1;
 	const __STATE_EXECUTING_PARENT__		= 2;
 	const __STATE_EXECUTING_CHILDREN__		= 3;
 	const __STATE_EXECUTED__				= 4;
-	
+
 	protected $_state = self::__STATE_NOT_EXECUTING__;
-	
+
 	/**
 	 * @var SuperClosure
 	 */
@@ -30,9 +35,9 @@ abstract class AbstractPromise implements PromiseInterface
 	 * @var ArrayObject
 	 */
 	protected $chain = array();
-	
+
 	protected $result;
-	
+
 	/**
 	 * @var PromiseInterface
 	 */
@@ -48,7 +53,7 @@ abstract class AbstractPromise implements PromiseInterface
 		$this->parent		= $parent;
 		$this->chain		= new \ArrayObject();
 	}
-	
+
 	public function state($state = null)
 	{
 		return $state ? $this->_state = $state : $this->_state;
@@ -63,12 +68,12 @@ abstract class AbstractPromise implements PromiseInterface
 	{
 		$class		= null === $class ? 'se\Promise\Promise' : $class;
 		$object 	= new $class($fulfill, $fail, $parent);
-		
+
 		if(!$object instanceof PromiseInterface)
 		{
-			throw new InvalidArgumentException(sprintf('%s class does not implement PromiseInterface', $class));
+			throw new \InvalidArgumentException(sprintf('%s class does not implement PromiseInterface', $class));
 		}
-		
+
 		return $object;
 	}
 
@@ -77,13 +82,13 @@ abstract class AbstractPromise implements PromiseInterface
 		$this->_state = self::__STATE_EXECUTING__;
 		try{
 			$result = call_user_func_array($this->fulfill, func_get_args());
-			
+
 			$this->_state = self::__STATE_EXECUTING_CHILDREN__;
 			foreach($this->chain as $promise)
 			{
 				$result = $promise($result);
 			}
-						
+
 			if($this->parent)
 			{
 				return $result;
@@ -108,17 +113,21 @@ abstract class AbstractPromise implements PromiseInterface
 		}
 		$this->_state = self::__STATE_NOT_EXECUTING__;
 	}
-	
+
 	public function result()
 	{
+		if($this->parent)
+		{
+			return $this->parent->result();
+		}
 		return $this->result;
 	}
-	
+
 	public function getParent()
 	{
 		return $this->parent;
 	}
-	
+
 	public function getRoot()
 	{
 		return $this->parent ? $this->parent->getRoot() : $this;
@@ -133,7 +142,7 @@ abstract class AbstractPromise implements PromiseInterface
 
 	public function _if($condition, $block, $fail = null, $class = null)
 	{
-		$class 			= self::getIfPromiseClass($class);
+		$class 			= $this->getIfPromiseClass($class);
 		$if 			= new $class($this, $condition, $block, $fail);
 		$this->chain->append($if);
 		return $if;
@@ -141,7 +150,7 @@ abstract class AbstractPromise implements PromiseInterface
 
 	public function _do($block, $while, $fail = null, $class = null)
 	{
-		$class 		= self::getDoPromiseClass($class);
+		$class 		= $this->getDoPromiseClass($class);
 		$do 		= new $class($this, $block, $while, $fail);
 		$this->then($do);
 		return $do;
@@ -156,6 +165,14 @@ abstract class AbstractPromise implements PromiseInterface
 
 	}
 
+	/****************************************************************
+	 *
+	*
+	* 							HELPERS
+	*
+	*
+	***************************************************************/
+
 	static public function makeSuperClosure($closure = null)
 	{
 		if($closure instanceof \Closure)
@@ -169,63 +186,197 @@ abstract class AbstractPromise implements PromiseInterface
 		return $closure;
 	}
 
-	protected function getIfPromiseClass($class = null)
-	{
-		return null === $class ? self::$_CLASS_IF_PROMISE : $class;
-	}
 
-	public static function setIfPromiseClass($class)
+	public static function checkClassImplementsCorrectInterfaceOrThrowException($class, $interface)
 	{
 		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface('se\Promise\IfPromiseInterface'))
+		if(!$refl->implementsInterface($interface))
 		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface se\Promise\IfPromiseInterface'));
+			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface "%s"', $class, $interface));
 		}
+	}
+
+	/****************************************************************
+	 *
+	* 				CONDITION/LOOP PROMISES CLASSES
+	*
+	***************************************************************/
+
+	/***************************************
+	 *
+	* 				IF
+	*
+	**************************************/
+
+	public function getIfPromiseClass($class = null)
+	{
+		if(null === $class)
+		{
+			if(null === $this->_class_if_promise)
+			{
+				return self::$_CLASS_IF_PROMISE;
+			}
+			return $this->_class_if_promise;
+		}
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\IfPromiseInterface');
+		return $class;
+	}
+
+	public static function setStaticIfPromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\IfPromiseInterface');
 		self::$_CLASS_IF_PROMISE = $class;
 	}
 
-	protected function getDoPromiseClass($class = null)
+	/**
+	 *
+	 * @param string $class
+	 * @return AbstractPromise
+	 */
+	public function setIfPromiseClass($class)
 	{
-		return null === $class ? self::$_CLASS_DO_PROMISE : $class;
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\IfPromiseInterface');
+		$this->_class_if_promise = $class;
+		return $this;
 	}
 
-	public static function setDoPromiseClass($class)
+
+	/***************************************
+	 *
+	* 				DO
+	*
+	**************************************/
+
+	/**
+	 * @param string $class
+	 * @return string
+	 */
+	public function getDoPromiseClass($class = null)
 	{
-		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface('se\Promise\DoPromiseInterface'))
+		if(null === $class)
 		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface se\Promise\DoPromiseInterface'));
+			if(null === $this->_class_do_promise)
+			{
+				return self::$_CLASS_DO_PROMISE;
+			}
+			return $this->_class_do_promise;
 		}
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\DoPromiseInterface');
+		return $class;
+	}
+
+	/**
+	 * @param string $class
+	 */
+	public static function setStaticDoPromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\DoPromiseInterface');
 		self::$_CLASS_DO_PROMISE = $class;
 	}
 
-	protected function getWhilePromiseClass($class = null)
+	/**
+	 *
+	 * @param string $class
+	 * @return AbstractPromise
+	 */
+	public function setDoPromiseClass($class)
 	{
-		return null === $class ? self::$_CLASS_WHILE_PROMISE : $class;
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\DoPromiseInterface');
+		$this->_class_do_promise = $class;
+		return $this;
 	}
 
-	public static function setWhilePromiseClass($class)
+
+	/***************************************
+	 *
+	* 				WHILE
+	*
+	**************************************/
+
+	/**
+	 *
+	 * @param string $class
+	 * @return string
+	 */
+	public function getWhilePromiseClass($class = null)
 	{
-		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface('se\Promise\WhilePromiseInterface'))
+		if(null === $class)
 		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface se\Promise\WhilePromiseInterface'));
+			if(null === $this->_class_do_promise)
+			{
+				return self::$_CLASS_WHILE_PROMISE;
+			}
+			return $this->_class_while_promise;
 		}
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\WhilePromiseInterface');
+		return $class;
+	}
+
+	/**
+	 * @param string $class
+	 */
+	public static function setStaticWhilePromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\WhilePromiseInterface');
 		self::$_CLASS_WHILE_PROMISE = $class;
 	}
 
-	protected function getForPromiseClass($class = null)
+	/**
+	 *
+	 * @param string $class
+	 * @return AbstractPromise
+	 */
+	public function setWhilePromiseClass($class)
 	{
-		return null === $class ? self::$_CLASS_FOR_PROMISE : $class;
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\WhilePromiseInterface');
+		$this->_class_while_promise = $class;
+		return $this;
 	}
 
-	public static function setForPromiseClass($class)
+
+	/***************************************
+	 *
+	* 				FOR
+	*
+	**************************************/
+
+	/**
+	 * 
+	 * @param string $class
+	 * @return string
+	 */
+	public function getForPromiseClass($class = null)
 	{
-		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface('se\Promise\ForPromiseInterface'))
+		if(null === $class)
 		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface se\Promise\ForPromiseInterface'));
+			if(null === $this->_class_for_promise)
+			{
+				return self::$_CLASS_FOR_PROMISE;
+			}
+			return $this->_class_for_promise;
 		}
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ForPromiseInterface');
+		return $class;
+	}
+	
+	/**
+	* @param string $class
+	*/
+	public static function setStaticForPromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ForPromiseInterface');
 		self::$_CLASS_FOR_PROMISE = $class;
+	}
+	
+	/**
+	 *
+	 * @param string $class
+	 * @return AbstractPromise
+	 */
+	public function setForPromiseClass($class)
+	{
+		self::checkClassImplementsCorrectInterfaceOrThrowException($class, 'se\Promise\ForPromiseInterface');
+		$this->_class_for_promise = $class;
+		return $this;
 	}
 }
