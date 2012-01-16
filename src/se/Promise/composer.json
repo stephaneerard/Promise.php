@@ -1,0 +1,22 @@
+{
+    "name": "se/promise-php",
+    "type": "library",
+    "description": "Promise for PHP",
+    "keywords": [],
+    "homepage": "",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Stéphane Erard",
+            "email": "stephane.erard@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.2"
+    },
+    "autoload": {
+        "psr-0": { "se\\Promise\\Promise": "" }
+    },
+    "target-dir": "se/Promise.php"
+}
