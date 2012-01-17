@@ -2,9 +2,10 @@
 
 namespace se\Promise\Test\Tests;
 
+use se\Promise\Test\PromiseTestCase;
 use se\Promise\Promise;
 
-class PromiseThenTestCase extends \PHPUnit_Framework_TestCase
+class PromiseThenTestCase extends PromiseTestCase
 {
 
 	public function testNew()

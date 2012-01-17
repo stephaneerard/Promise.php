@@ -59,13 +59,8 @@ abstract class AbstractPromise implements PromiseInterface
 			foreach($this->chain as $promise)
 			{
 				$result = $promise($result);
-			}if($this->parent)
-			{
-				return $result;
 			}
-
-			$this->result = $result;
-			return $this;
+			
 		}catch(\Exception $e)
 		{
 			if($this->fail)
@@ -89,21 +84,7 @@ abstract class AbstractPromise implements PromiseInterface
 
 	public function result()
 	{
-		if($this->parent)
-		{
-			return $this->parent->result();
-		}
 		return $this->result;
-	}
-
-	public function getParent()
-	{
-		return $this->parent;
-	}
-
-	public function getRoot()
-	{
-		return $this->parent ? $this->parent->getRoot() : $this;
 	}
 
 	public function then($fulfill, $fail = null, $class = null)
@@ -132,15 +113,5 @@ abstract class AbstractPromise implements PromiseInterface
 			throw new \InvalidArgumentException('$closure must be an instance of Closure or SuperClosure');
 		}
 		return $closure;
-	}
-
-
-	public static function checkClassImplementsCorrectInterfaceOrThrowException($class, $interface)
-	{
-		$refl = new \ReflectionClass($class);
-		if(!$refl->implementsInterface($interface))
-		{
-			throw new \InvalidArgumentException(sprintf('The class "%s" does not implement the interface "%s"', $class, $interface));
-		}
 	}
 }
